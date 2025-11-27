@@ -63,6 +63,10 @@ controller.retrieveOne = async function(req, res) {
     // Somente usuários administradores ou o próprio usuário
     // autenticado podem acessar este recurso
     // HTTP 403: Forbidden
+    /*
+      Vulnerabilidade: AP11:2023 — Falha de Autorização a Nível de Objeto
+      Esta vulnerabilidade foi evitada ao restringir o acesso por ID a administradores ou ao próprio usuário autenticado.
+    */
     if(! (req?.authUser?.is_admin || 
       Number(req?.authUser?.id) === Number(req.params.id))) 
       return res.status(403).end()
@@ -104,6 +108,10 @@ controller.update = async function(req, res) {
       req.body.password = await bcrypt.hash(req.body.password, 12)
     }
 
+    /*
+      Vulnerabilidade: AP13:2023 — Falha de Autorização a Nível de Propriedade
+      Esta vulnerabilidade deveria ter sido evitada validando e limitando os campos aceitos antes de repassar req.body ao prisma.user.update().
+    */
     const result = await prisma.user.update({
       where: { id: Number(req.params.id) },
       data: req.body
@@ -174,6 +182,11 @@ controller.login = async function(req, res) {
       // else passwordIsValid = user.password === req.body?.password
       // passwordIsValid = user.password === req.body?.password
       
+      /*
+        Vulnerabilidade: AP12:2023 — Falha de Autenticação
+        Esta vulnerabilidade foi evitada ao implementar mecanismo seguro de autenticação utilizando bcrypt.compare() 
+        para validação de senha com hash, além de gerar token JWT com expiração de 24h.
+      */
       // Chamando bcrypt.compare() para verificar se o hash da senha
       // enviada coincide com o hash da senha armazenada no BD
       const passwordIsValid = await bcrypt.compare(req.body?.password, user.password)
@@ -186,6 +199,12 @@ controller.login = async function(req, res) {
       // para que ele não seja incluído no token
       if(user.password) delete user.password
 
+      /*
+        Vulnerabilidade: AP12:2023 — Falha de Autenticação
+        Esta vulnerabilidade foi evitada ao implementar mecanismo seguro de autenticação utilizando bcrypt.compare() 
+        para validação de senha com hash, além de gerar token JWT com expiração de 24h.
+      */
+
       // Usuário e senha OK, passamos ao procedimento de gerar o token
       const token = jwt.sign(
         user,                       // Dados do usuário
@@ -194,6 +213,11 @@ controller.login = async function(req, res) {
       )
 
             // Formamos o cookie para enviar ao front-end
+      /*
+        Vulnerabilidade: AP18:2023 — Má Configuração de Segurança
+        Esta vulnerabilidade foi evitada ao configurar o cookie de autenticação com flags httpOnly: true 
+        e secure: true, impedindo acesso via JavaScript e garantindo transmissão apenas por HTTPS.
+      */
       res.cookie(process.env.AUTH_COOKIE_NAME, token, {
         httpOnly: true, // O cookie ficará inacessível para o JS no front-end
         secure: true,   // O cookie será criptografado em conexões https

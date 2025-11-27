@@ -28,7 +28,10 @@ app.use(cookieParser())
 // pode efetuar dentro de um determinado intervalo de tempo
 import { rateLimit } from 'express-rate-limit'
 
-
+/*
+  Vulnerabilidade: AP14:2023 — Consumo Irrestrito de Recursos
+  Esta vulnerabilidade foi evitada ao aplicar limitação de requisições via express-rate-limit.
+*/
 const limiter = rateLimit({
  windowMs: 60 * 1000,    // Intervalo: 1 minuto
  limit: 20               // Máximo de 20 requisições
